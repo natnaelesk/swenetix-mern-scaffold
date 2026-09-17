@@ -1,0 +1,9 @@
+{
+  "eslint.enable": true,
+  "eslint.useFlatConfig": true,
+  "eslint.workingDirectories": ["Backend"],
+  "javascript.validate.enable": true,
+  "javascript.suggest.autoImports": true,
+  "javascript.preferences.importModuleSpecifierEnding": "js",
+  "js/ts.implicitProjectConfig.checkJs": false
+}
