@@ -10,9 +10,9 @@ export const createPost = async (req,res) => {
         if (!title || !imageUrl) {
             return res.status(400).json({ message: "Title and imageUrl are required" });
         }
-        const newPost = new FeedsModels({ title, imageUrl, userId: req.user.id });
-        await newPost.save();
-        res.status(201).json({ message: "Post created successfully", post: newPost });
+        const newPost = await FeedsModels.create({ title, imageUrl, userId: req.user.id });
+        const post = await FeedsModels.findById(newPost._id).populate('userId', 'username');
+        res.status(201).json({ message: "Post created successfully", post });
     } catch (error) {
         console.log(error);
         return res.status(500).json({ message: "can't create post", error: error.message });

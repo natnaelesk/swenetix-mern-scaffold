@@ -1,12 +1,10 @@
-import dotenv from "dotenv"
+import 'dotenv/config'
 import express from "express"
 import mongoose from "mongoose"
 import cors from "cors"
 import FeedsRoutes from "./routes/Feeds.routes.js"
 import UserRoutes from "./routes/User.routes.js"
-import { protectRoute } from "./middleware/auth.middleware.js"
-
-dotenv.config() 
+import { protectRoute } from "./middleware/auth.middleware.js" 
 const app = express()
 const port = process.env.PORT || 3000
 

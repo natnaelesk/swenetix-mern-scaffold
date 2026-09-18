@@ -1,4 +1,5 @@
 import UsersModels from "../models/Users.models.js";
+import FeedsModels from "../models/Feeds.models.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
@@ -84,6 +85,27 @@ export const getMe = async (req,res) => {
         return res.status(500).json({ message: "can't get user", error: error.message });
     }
 }
+
+export const getUserProfile = async (req, res) => {
+    try {
+        const username = String(req.params.username || '').toLowerCase().trim();
+        const user = await UsersModels.findOne({ username }).select('-password');
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        const posts = await FeedsModels.find({ userId: user._id })
+            .sort({ createdAt: -1 })
+            .populate('userId', 'username');
+        return res.status(200).json({
+            message: 'Profile fetched successfully',
+            user,
+            posts,
+        });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ message: "can't get profile", error: error.message });
+    }
+};
 
 export const updateUser = async (req,res) => {
     try {
