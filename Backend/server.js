@@ -3,6 +3,8 @@ import express from "express"
 import mongoose from "mongoose"
 import cors from "cors"
 import FeedsRoutes from "./routes/Feeds.routes.js"
+import UserRoutes from "./routes/User.routes.js"
+import { protectRoute } from "./middleware/auth.middleware.js"
 
 dotenv.config() 
 const app = express()
@@ -25,7 +27,8 @@ mongoose.connect(process.env.MONGO_URI || '')
     })
 
 
-app.use("/api/feeds" ,   FeedsRoutes )
+app.use("/api/feeds" , protectRoute,  FeedsRoutes )
+app.use("/api/user" ,   UserRoutes )
 
 
 
