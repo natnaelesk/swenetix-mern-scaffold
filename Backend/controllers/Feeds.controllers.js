@@ -1,13 +1,12 @@
 import FeedsModels from "../models/Feeds.models.js";
 
-export const createPost = async (req,res) => {
+function isPostOwner(post, userId) {
+    return String(post.userId) === String(userId);
+}
 
-    
+export const createPost = async (req,res) => {
     try {
-        const { title, imageUrl , userId } = req.body;
-        if (userId !== req.user.id) {
-            return res.status(401).json({ message: "You are not authorized to create this post" });
-        }
+        const { title, imageUrl } = req.body;
         if (!title || !imageUrl) {
             return res.status(400).json({ message: "Title and imageUrl are required" });
         }
@@ -27,17 +26,45 @@ export const getPosts = async (req,res) => {
 
 
 export const deletePost = async (req,res) => {
-
-    const { id } = req.params;
-    const post = await FeedsModels.findByIdAndDelete(id);
-    res.status(200).json(post);
+    try {
+        const { id } = req.params;
+        const post = await FeedsModels.findById(id);
+        if (!post) {
+            return res.status(404).json({ message: "Post not found" });
+        }
+        if (!isPostOwner(post, req.user.id)) {
+            return res.status(403).json({ message: "Not your post" });
+        }
+        await post.deleteOne();
+        res.status(200).json({ message: "Post deleted successfully", post });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ message: "can't delete post", error: error.message });
+    }
 }
 
 export const updatePost = async (req,res) => {
-    const { id } = req.params;
-    const { title, imageUrl } = req.body;
-    const post = await FeedsModels.findByIdAndUpdate(id, { title, imageUrl }, { new: true });
-    res.status(200).json(post);
+    try {
+        const { id } = req.params;
+        const { title, imageUrl } = req.body;
+        if (!title || !imageUrl) {
+            return res.status(400).json({ message: "Title and imageUrl are required" });
+        }
+        const post = await FeedsModels.findById(id);
+        if (!post) {
+            return res.status(404).json({ message: "Post not found" });
+        }
+        if (!isPostOwner(post, req.user.id)) {
+            return res.status(403).json({ message: "Not your post" });
+        }
+        post.title = title;
+        post.imageUrl = imageUrl;
+        await post.save();
+        res.status(200).json({ message: "Post updated successfully", post });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ message: "can't update post", error: error.message });
+    }
 }
 
 export const likePost = async (req,res) => {

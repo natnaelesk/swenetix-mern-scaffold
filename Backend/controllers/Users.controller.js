@@ -15,21 +15,25 @@ export const registerUser = async (req,res) => {
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
-        if (!hashedPassword) {
-            return res.status(501).json({ message: "can't hash password" });
-        }
+        const savedUser = await UsersModels.create({ username, password: hashedPassword });
 
-        const newUser = new UsersModels({ username, password: hashedPassword });
-        const savedUser = await newUser.save();
-
-        const token = jwt.sign({ id: savedUser._id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
-        res.status(201).json({ message: "User registered successfully", user: {username: savedUser.username , id: savedUser._id}, token: token });
+        const token = jwt.sign(
+            { id: savedUser._id, username: savedUser.username },
+            JWT_SECRET,
+            { expiresIn: JWT_EXPIRES_IN }
+        );
+        res.status(201).json({
+            message: "User registered successfully",
+            user: { username: savedUser.username, id: savedUser._id },
+            token,
+        });
 
     } catch (error) {
-
+        if (error.code === 11000) {
+            return res.status(400).json({ message: "Username already taken" });
+        }
         console.log(error);
         return res.status(500).json({ message: "can't register user", error: error.message });
-   
     }
 
 }
@@ -42,17 +46,25 @@ export const loginUser = async (req,res) => {
             return res.status(400).json({ message: "Username and password are required" });
         }
 
-        const user = await UsersModels.findOne({ username });
+        const user = await UsersModels.findOne({ username: username.toLowerCase().trim() });
         if (!user) {
             return res.status(401).json({ message: "User not found" });
         }
-        
+
         const isPasswordCorrect = await bcrypt.compare(password, user.password);
         if (!isPasswordCorrect) {
             return res.status(401).json({ message: "Invalid password" });
         }
-        const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
-        res.status(200).json({ message : "User logged in successfully", user: {username: user.username , id: user._id}, token: token });
+        const token = jwt.sign(
+            { id: user._id, username: user.username },
+            JWT_SECRET,
+            { expiresIn: JWT_EXPIRES_IN }
+        );
+        res.status(200).json({
+            message: "User logged in successfully",
+            user: { username: user.username, id: user._id },
+            token,
+        });
     } catch (error) {
         console.log(error);
         return res.status(500).json({ message: "can't login user", error: error.message });
@@ -76,20 +88,18 @@ export const getMe = async (req,res) => {
 export const updateUser = async (req,res) => {
     try {
         const { name, username, password } = req.body;
-        if (!name || !username || !password) {
-            return res.status(400).json({ message: "Name, username and password are required" });
-        }
-
-        
         const user = await UsersModels.findById(req.user.id);
         if (!user) {
             return res.status(401).json({ message: "User not found" });
         }
-        user.name = name;
-        user.username = username;
-        user.password = await bcrypt.hash(password, 10);
+        if (name) user.name = name;
+        if (username) user.username = username;
+        if (password) user.password = await bcrypt.hash(password, 10);
         await user.save();
-        res.status(200).json({ message : "User updated successfully", user: {username: user.username , id: user._id} });
+        res.status(200).json({
+            message: "User updated successfully",
+            user: { username: user.username, id: user._id, name: user.name },
+        });
     }catch (error) {
         console.log(error);
         return res.status(500).json({ message: "can't update user", error: error.message });
